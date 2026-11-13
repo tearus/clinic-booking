@@ -2,10 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { PrismaExceptionFilter } from './prisma/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
   app.enableShutdownHooks();
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -13,6 +15,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new PrismaExceptionFilter());
+
   const config = new DocumentBuilder()
     .setTitle('Clinic API')
     .setDescription('API для записи на приём')

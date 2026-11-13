@@ -19,7 +19,6 @@ export class DoctorsService {
     if (!specialty) {
       throw new NotFoundException('Специальность не найдена');
     }
-
     return this.prisma.doctor.create({
       data: dto,
       include: { specialty: true },
