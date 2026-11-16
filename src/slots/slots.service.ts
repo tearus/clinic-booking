@@ -8,6 +8,8 @@ import { CreateSlotDto } from './dto/create-slot.dto';
 import { UpdateSlotDto } from './dto/update-slot.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { DoctorsService } from '../doctors/doctors.service';
+import { FindSlotsQueryDto } from './dto/slots-list-query.dto';
+import { Prisma } from '../generated/prisma/client';
 
 @Injectable()
 export class SlotsService {
@@ -16,27 +18,12 @@ export class SlotsService {
     private readonly doctorsService: DoctorsService,
   ) {}
 
-  async create(dto: CreateSlotDto) {
-    await this.doctorsService.findOne(dto.doctorId);
-    const start = new Date(dto.startsAt);
-    const end = new Date(dto.endsAt);
-    this.ovelappingCheck(dto.doctorId, start, end);
-    this.parseRange(start, end);
-    return this.prisma.slot.create({
-      data: {
-        doctorId: dto.doctorId,
-        startsAt: start,
-        endsAt: end,
-      },
-      include: { doctor: true },
-    });
-  }
   private parseRange(startsAt: Date, endsAt: Date) {
     if (new Date(startsAt) >= new Date(endsAt)) {
       throw new BadRequestException('Дата начала должна быть раньше конца');
     }
   }
-  private async ovelappingCheck(
+  private async overlappingCheck(
     doctorId: number,
     startsAt: Date,
     endsAt: Date,
@@ -55,8 +42,55 @@ export class SlotsService {
       throw new ConflictException('У врача уже есть слот в это время');
     }
   }
-  findAll() {
+
+  async create(dto: CreateSlotDto) {
+    await this.doctorsService.findOne(dto.doctorId);
+    const start = new Date(dto.startsAt);
+    const end = new Date(dto.endsAt);
+    this.parseRange(start, end);
+    await this.overlappingCheck(dto.doctorId, start, end);
+    return this.prisma.slot.create({
+      data: {
+        doctorId: dto.doctorId,
+        startsAt: start,
+        endsAt: end,
+      },
+      include: { doctor: true },
+    });
+  }
+
+  findFiltered(query: FindSlotsQueryDto) {
+    const where: Prisma.SlotWhereInput = {};
+
+    if (query.doctorId !== undefined) {
+      where.doctorId = query.doctorId;
+    }
+
+    let from: Date | undefined;
+    let to: Date | undefined;
+
+    if (query.date) {
+      from = new Date(`${query.date}T00:00:00.000Z`);
+      if (Number.isNaN(from.getTime())) {
+        throw new BadRequestException('Некорректная дата');
+      }
+      to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    if (query.onlyFree) {
+      where.isBooked = false;
+      const now = new Date();
+      if (!from || from < now) {
+        from = now;
+      }
+    }
+
+    if (from || to) {
+      where.startsAt = { gte: from, lt: to };
+    }
+
     return this.prisma.slot.findMany({
+      where,
       include: { doctor: true },
       orderBy: { startsAt: 'asc' },
     });
@@ -85,7 +119,7 @@ export class SlotsService {
     await this.doctorsService.findOne(doctorId);
     this.parseRange(startsAt, endsAt);
 
-    await this.ovelappingCheck(doctorId, startsAt, endsAt, id);
+    await this.overlappingCheck(doctorId, startsAt, endsAt, id);
     return this.prisma.slot.update({
       where: { id },
       data: {

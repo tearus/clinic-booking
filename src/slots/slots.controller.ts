@@ -7,10 +7,12 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { SlotsService } from './slots.service';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { UpdateSlotDto } from './dto/update-slot.dto';
+import { FindSlotsQueryDto } from './dto/slots-list-query.dto';
 
 @Controller('slots')
 export class SlotsController {
@@ -22,8 +24,8 @@ export class SlotsController {
   }
 
   @Get()
-  findAll() {
-    return this.slotsService.findAll();
+  findAll(@Query() query: FindSlotsQueryDto) {
+    return this.slotsService.findFiltered(query);
   }
 
   @Get(':id')
