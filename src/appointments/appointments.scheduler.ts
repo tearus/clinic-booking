@@ -1,8 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
-import { PrismaService } from "../prisma/prisma.service";
-import { NotificationsService } from "../notifications/notifications.service";
-import { CONFIRM_DEADLINE_BEFORE_MS, REMINDER_BEFORE_MS } from "./appointments.constants";
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  CONFIRM_DEADLINE_BEFORE_MS,
+  REMINDER_BEFORE_MS,
+} from './appointments.constants';
 
 @Injectable()
 export class AppointmentsScheduler {
@@ -18,7 +21,7 @@ export class AppointmentsScheduler {
     const now = Date.now();
     const due = await this.prisma.appointment.findMany({
       where: {
-        status: "ACTIVE",
+        status: 'ACTIVE',
         reminderSentAt: null,
         slot: {
           startsAt: {
@@ -34,7 +37,9 @@ export class AppointmentsScheduler {
         slot: { select: { startsAt: true } },
       },
     });
-    this.logger.log(`sendReminders: now=${new Date(now).toISOString()}, due=${due.length}`);
+    this.logger.log(
+      `sendReminders: now=${new Date(now).toISOString()}, due=${due.length}`,
+    );
     for (const appointment of due) {
       const { count } = await this.prisma.appointment.updateMany({
         where: { id: appointment.id, reminderSentAt: null },
@@ -63,7 +68,7 @@ export class AppointmentsScheduler {
     const deadline = new Date(Date.now() + CONFIRM_DEADLINE_BEFORE_MS);
     const stale = await this.prisma.appointment.findMany({
       where: {
-        status: "ACTIVE",
+        status: 'ACTIVE',
         reminderSentAt: { not: null },
         slot: { startsAt: { lte: deadline } },
       },
@@ -74,11 +79,14 @@ export class AppointmentsScheduler {
     for (const { id, slotId } of stale) {
       await this.prisma.$transaction(async (tx) => {
         const { count } = await tx.appointment.updateMany({
-          where: { id, status: "ACTIVE" },
-          data: { status: "EXPIRED" },
+          where: { id, status: 'ACTIVE' },
+          data: { status: 'EXPIRED' },
         });
         if (count === 0) return;
-        await tx.slot.update({ where: { id: slotId }, data: { isBooked: false } });
+        await tx.slot.update({
+          where: { id: slotId },
+          data: { isBooked: false },
+        });
       });
     }
   }

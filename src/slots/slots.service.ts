@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DoctorsService } from '../doctors/doctors.service';
 import { FindSlotsQueryDto } from './dto/slots-list-query.dto';
 import { Prisma } from '../generated/prisma/client';
+import { dayRange } from '../common/clinic-time';
 
 @Injectable()
 export class SlotsService {
@@ -23,6 +24,7 @@ export class SlotsService {
       throw new BadRequestException('Дата начала должна быть раньше конца');
     }
   }
+
   private async overlappingCheck(
     doctorId: number,
     startsAt: Date,
@@ -70,11 +72,7 @@ export class SlotsService {
     let to: Date | undefined;
 
     if (query.date) {
-      from = new Date(`${query.date}T00:00:00.000Z`);
-      if (Number.isNaN(from.getTime())) {
-        throw new BadRequestException('Некорректная дата');
-      }
-      to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
+      ({ from, to } = dayRange(query.date));
     }
 
     if (query.onlyFree) {

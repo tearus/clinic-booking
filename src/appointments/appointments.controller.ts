@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
@@ -24,11 +25,13 @@ export class AppointmentsController {
   }
 
   @Post(':token/confirm')
+  @HttpCode(200)
   confirm(@Param('token', ParseUUIDPipe) token: string) {
     return this.appointmentsService.confirm(token);
   }
 
   @Post(':token/cancel')
+  @HttpCode(200)
   cancel(@Param('token', ParseUUIDPipe) token: string) {
     return this.appointmentsService.cancel(token);
   }

@@ -8,6 +8,8 @@ import { SpecialtyModule } from './specialty/specialty.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -18,8 +20,25 @@ import { NotificationsModule } from './notifications/notifications.module';
     AppointmentsModule,
     NotificationsModule,
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRootAsync({
+      useFactory: () => ({
+        throttlers: [
+          {
+            ttl: 60_000,
+            limit: Number(process.env.THROTTLE_LIMIT ?? 100),
+          },
+        ],
+        skipIf: () => process.env.DISABLE_THROTTLE === 'true',
+      }),
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

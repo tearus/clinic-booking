@@ -30,7 +30,6 @@ export class AppointmentsService {
         if (!exists) throw new NotFoundException('Слот не найден');
         throw new ConflictException('Слот уже занят или время прошло');
       }
-
       const slot = await tx.slot.findUniqueOrThrow({
         where: { id: dto.slotId },
         select: { startsAt: true },

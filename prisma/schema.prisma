@@ -52,3 +52,16 @@ model Appointment {
   confirmedAt    DateTime?
   reminderSentAt DateTime?
 }
+
+enum Role {
+  ADMIN
+  REGISTRAR
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+}
