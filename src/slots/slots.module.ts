@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { SlotsService } from './slots.service';
 import { SlotsController } from './slots.controller';
 import { DoctorsModule } from '../doctors/doctors.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   controllers: [SlotsController],
   providers: [SlotsService],
-  imports: [DoctorsModule],
+  imports: [DoctorsModule, AuthModule],
+
 })
 export class SlotsModule {}

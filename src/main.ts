@@ -14,6 +14,7 @@ async function bootstrap() {
     .setTitle('Clinic API')
     .setDescription('API для записи на приём')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

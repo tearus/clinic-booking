@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
+import { hashPassword } from '../src/auth/password';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -98,11 +99,30 @@ async function seedSlots() {
   );
 }
 
+async function seedAdmin (){
+   const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) {
+    throw new Error('Задайте ADMIN_EMAIL и ADMIN_PASSWORD в .env');
+  }
+
+  await prisma.user.upsert({
+    where: { email: email.toLowerCase() },
+    update: {}, 
+    create: {
+      email: email.toLowerCase(),
+      passwordHash: await hashPassword(password),
+      role: 'ADMIN',
+    },
+  });
+}
+
 async function main() {
   console.log('🌱 Seeding...\n');
   await seedSpecialties();
   await seedDoctors();
   await seedSlots();
+  await seedAdmin();
   console.log('\n✅ Seed completed');
 }
 
